@@ -40,6 +40,7 @@ library(jtools)
 library(vtable)
 library(readr)
 library(purrr)
+library(lubridate)
 
 # read in trends_up_to data
 file_name_pattern <- 'trends_up_'
@@ -52,6 +53,7 @@ trends_data <- trends_up_files %>%
   rbindlist()
 
 # read in Most+Recent+Cohorts file and id_name_link
+# drop all universities that share the same name
 score_card <- read_csv('02_raw_data/Data_Exploration_Rawdata/Lab3_Rawdata/Most+Recent+Cohorts+(Scorecard+Elements).csv')
 
 id_name_link <- read_csv('02_raw_data/Data_Exploration_Rawdata/Lab3_Rawdata/id_name_link.csv')
@@ -65,12 +67,14 @@ id_sc_merged <- merge(x = id_name_link, y = score_card, by = c('UNITID', 'OPEID'
 # join sc_id_merged with trends_data
 id_sc_trends_merged <- merge(x = id_sc_merged, y = trends_data, by = 'schname', all.x = TRUE)
 
+# determine low-earning vs. high-earning colleges
 # select data to work with, filter for BS, rename variables to something understandable
 # filter out Nulls and Privacy Suppressed median earnings and convert to numeric
 working_data <- id_sc_trends_merged %>% 
-  select('UNITID', 'OPEID', 'INSTNM', 'PREDDEG', 'keyword', 'monthorweek', 'index', 
+  select('UNITID', 'OPEID', 'INSTNM', 'PREDDEG', 'keyword', 'monthorweek', 'keynum', 
          'md_earn_wne_p10-REPORTED-EARNINGS') %>% 
-  rename(inst_name = INSTNM, pred_degree = PREDDEG, median_earnings = 'md_earn_wne_p10-REPORTED-EARNINGS') %>% 
+  rename(inst_name = INSTNM, pred_degree = PREDDEG, 
+         median_earnings = 'md_earn_wne_p10-REPORTED-EARNINGS') %>% 
   filter(pred_degree == 3) %>% 
   filter(median_earnings != 'NULL') %>% 
   filter(median_earnings != 'PrivacySuppressed') %>% 
@@ -78,6 +82,26 @@ working_data <- id_sc_trends_merged %>%
 
 # median salary == 41800. This is the line dividing high earning vs. low earning
 median_salary <- median(working_data$median_earnings)
+
+# standardize trends data by keynum
+trends_std <- working_data %>%
+  group_by(keyword) %>% 
+  mutate(standardized_trends = (keynum - mean(keynum)) / sd(keynum)) %>% 
+  drop_na()
+
+# level the data to keyword per college per month
+keywords_by_month <- trends_std %>%
+  mutate(by_month = substr(monthorweek, 1, 7)) %>% 
+  filter(by_month >= 2015-09)
+  group_by(by_month) %>% 
+  summarize(UNITID, OPEID, inst_name, keyword, median_earnings, standardized_trends)
+
+# should "start of September 2015" be accounted for in regression???
+  
+
+
+  
+  
 
 
 
