@@ -38,30 +38,46 @@ library(tidyverse)
 library(data.table)
 library(jtools)
 library(vtable)
+library(readr)
 library(purrr)
 
-file_name_pattern <- str_sub('trends_up_', 1, 10)
-trends_up_files <- list.files(path = '../Lab3_Rawdata/', pattern = file_name_pattern, full.names = TRUE) %>% 
-  map(fread)
+# read in trends_up_to data
+file_name_pattern <- 'trends_up_'
+trends_up_files <- list.files(path = '02_raw_data/Data_Exploration_Rawdata/Lab3_Rawdata', 
+                              pattern = 'trends_up_', full.names = TRUE)
 
-# %>% rbindlist()
-# fread() - used for csv files
-
-process_file <- function(df) {
-  
-}
-
-## NHK code below: ##
-
-filelist <- list.files(path = '../Monthly_reports/', pattern = 'sales', full.names = TRUE)
-
-process_file <- function(df) {
-  sales <- df[1,3]
-  employee <- df[42,2]
-  return(data.table(sales = sales, employee = employee))
-}
-
-compiled_data <- filelist %>%
-  map(read_excel) %>%
-  map(process_file) %>%
+# compile data into 1 df
+trends_data <- trends_up_files %>% 
+  map(read_csv) %>% 
   rbindlist()
+
+# read in Most+Recent+Cohorts file and id_name_link
+score_card <- read_csv('02_raw_data/Data_Exploration_Rawdata/Lab3_Rawdata/Most+Recent+Cohorts+(Scorecard+Elements).csv')
+
+id_name_link <- read_csv('02_raw_data/Data_Exploration_Rawdata/Lab3_Rawdata/id_name_link.csv')
+id_name_link <- id_name_link %>% 
+  rename(UNITID = unitid, OPEID = opeid) %>% 
+  distinct(schname, .keep_all = TRUE)
+
+# join id_name_link with score_card
+id_sc_merged <- merge(x = id_name_link, y = score_card, by = c('UNITID', 'OPEID'), all.x = TRUE)
+
+# join sc_id_merged with trends_data
+id_sc_trends_merged <- merge(x = id_sc_merged, y = trends_data, by = 'schname', all.x = TRUE)
+
+# select data to work with, filter for BS, rename variables to something understandable
+# filter out Nulls and Privacy Suppressed median earnings and convert to numeric
+working_data <- id_sc_trends_merged %>% 
+  select('UNITID', 'OPEID', 'INSTNM', 'PREDDEG', 'keyword', 'monthorweek', 'index', 
+         'md_earn_wne_p10-REPORTED-EARNINGS') %>% 
+  rename(inst_name = INSTNM, pred_degree = PREDDEG, median_earnings = 'md_earn_wne_p10-REPORTED-EARNINGS') %>% 
+  filter(pred_degree == 3) %>% 
+  filter(median_earnings != 'NULL') %>% 
+  filter(median_earnings != 'PrivacySuppressed') %>% 
+  mutate(median_earnings = as.numeric(median_earnings))
+
+# median salary == 41800. This is the line dividing high earning vs. low earning
+median_salary <- median(working_data$median_earnings)
+
+
+
