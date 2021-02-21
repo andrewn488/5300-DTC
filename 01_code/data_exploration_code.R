@@ -43,7 +43,7 @@ library(purrr)
 library(lubridate)
 
 # read in trends_up_to data
-trends_up_files <- list.files(path = '02_raw_data/Data_Exploration_Rawdata/Lab3_Rawdata', 
+trends_up_files <- list.files(path = '../02_raw_data/Data_Exploration_Rawdata/Lab3_Rawdata', 
                               pattern = 'trends_up_', full.names = TRUE)
 
 # compile data into 1 df
@@ -53,9 +53,9 @@ trends_data <- trends_up_files %>%
 
 # read in Most+Recent+Cohorts file and id_name_link
 # drop all universities that share the same name
-score_card <- read_csv('02_raw_data/Data_Exploration_Rawdata/Lab3_Rawdata/Most+Recent+Cohorts+(Scorecard+Elements).csv')
+score_card <- read_csv('../02_raw_data/Data_Exploration_Rawdata/Lab3_Rawdata/Most+Recent+Cohorts+(Scorecard+Elements).csv')
 
-id_name_link <- read_csv('02_raw_data/Data_Exploration_Rawdata/Lab3_Rawdata/id_name_link.csv')
+id_name_link <- read_csv('../02_raw_data/Data_Exploration_Rawdata/Lab3_Rawdata/id_name_link.csv')
 id_name_link <- id_name_link %>% 
   rename(UNITID = unitid, OPEID = opeid) %>% 
   distinct(schname, .keep_all = TRUE)
@@ -84,8 +84,6 @@ working_data <- id_sc_trends_merged %>%
 
 # median salary == 41800. This is the line dividing high earning vs. low earning
 median_earnings_threshold <- median(working_data$median_earnings)
-high_earning_uni <- median_earnings_threshold < working_data$median_earnings
-
 
 # standardize trends data Index by keynum:
 # add columns for high and low earning school compared to threshold
@@ -98,7 +96,6 @@ standardized_trends_index <- working_data %>%
 tidy_data <- standardized_trends_index %>% 
   select(inst_name, monthorweek, median_earnings, public_private,
             high_earning_school, standardized_index)
-
 
 # get 'prior to Sept 2015' and 'post Sept 2015'
 pre_sept_2015 <- tidy_data %>%
@@ -114,59 +111,39 @@ post_sept_2015 <- tidy_data %>%
 # run regressions of models for pre and post Sept 2015 and export
 m1 <- lm(median_earnings ~ standardized_index + high_earning_school + factor(public_private), data = pre_sept_2015)
 m2 <- lm(median_earnings ~ standardized_index + high_earning_school + factor(public_private), data = post_sept_2015)
-m3 <- lm(log(median_earnings) ~ standardized_index, data = pre_sept_2015)
-m4 <- lm(log(median_earnings) ~ standardized_index, data = post_sept_2015)
 
-export_summs(m1, m2, m3, m4)
+export_summs(m1, m2)
 
-
+# Plots: 
+# plot coefs: 
 plot_coefs(m1, m2)
-effect_plot(m2, pred = 'standardized_index', plot.points = TRUE)
-
 
 # Geom Density
-ggplot(tidy_data, aes(x = standardized_index)) + 
+density <- ggplot(tidy_data, aes(x = standardized_index)) + 
   geom_density() + 
-  labs(x = 'Standardized Index', y = 'Median Earnings', title = 'Distribution of DENSITY')
-
-# Geom Bar
-ggplot(tidy_data, aes(x = public_private)) + 
-  geom_bar() + 
-  labs(x = 'public_private', title = 'Bar Chart')
-
-# Geom Point
-ggplot(tidy_data, aes(x = median_earnings, y = standardized_index)) + 
-  geom_point() + 
-  labs(x = 'Median Earnings', y = 'Standardized Index', title = 'Distribution of POINT')
-
-ggplot(tidy_data, aes(x = standardized_index, y = median_earnings)) + 
-  geom_point() + 
-  labs(x = 'Median Earnings', y = 'Standardized Index', title = 'Distribution of POINT')
+  labs(x = 'Standardized Index', title = 'Distribution of Google searches on standardized index')
 
 
-# Geom Point/Smooth
-ggplot(standardized_trends_index, aes(x = public_private, y = median_earnings)) + 
-  geom_point() + 
-  geom_smooth() +
-  labs(x = 'Public Private', y = 'Median Earnings', title = 'Distribution of POINT/SMOOTH')
 
-# plot to a graph and check it out!
-ggplot(data = tidy_data) +
-  geom_histogram(mapping = aes(x = median_earnings), binwidth = 1000) + 
-  xlab('Median Earnings') + 
-  ggtitle('Distribution of Median Earnings')
+######## Playing around with different Plots #############
 
-ggplot(data = standardized_trends_index, mapping = aes(x = fitted(median_earnings),
-                                                       y = rstandard(standardized_index))) +
-  geom_point() + 
-  geom_smooth() +
-  labs(x = 'Median Earnings', y = 'Standardized Index', title = 'PLOT DADDY')
-
-# Fitted vs. Residual Plot
-ggplot(data = profit_mlr1_01, mapping = aes(x = fitted(profit_mlr1_01), y = rstandard(profit_mlr1_01))) +
-  geom_point() +
-  geom_smooth() +
-  labs(x = "Residual", y = "Fitted", title = "Residual vs. Fitted - Profit by Household (Model 01)")
-
-
+# # Geom Bar
+# 
+# public_private <- tidy_data$public_private
+# combined <- merge(x = pre_sept_2015, y = post_sept_2015, by = 'inst_name', all.x = TRUE)
+# data_long <- melt(combined, id = c('public_private'))
+# 
+# ggplot(pre_sept_2015, aes(x = public_private)) + 
+#   geom_bar() + 
+#   labs(x = 'public_private', title = 'Pre-Sept 2015')
+# 
+# ggplot(post_sept_2015, aes(x = public_private)) + 
+#   geom_bar() + 
+#   labs(x = 'public_private', title = 'Post-Sept 2015')
+# 
+# # Geom Histogram
+# ggplot(data = tidy_data) +
+#   geom_histogram(mapping = aes(x = median_earnings), binwidth = 1000) + 
+#   xlab('Median Earnings') + 
+#   ggtitle('Distribution of Median Earnings')
 

@@ -1,0 +1,54 @@
+---
+title: "Data Exploration Analysis"
+author: "Andrew Nalundasan"
+date: "2/21/2021"
+output: html_document
+---
+
+```{r, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+source('../01_code/data_exploration_code.R', local = FALSE)
+```
+
+## Purpose
+We're currently in a day and age where people are learning from data. These days, it is normal to track data for just about everything. Starting in September 2015, the College Scorecard was released, providing prospective students all kinds of information about universities that they could apply to, depending on their long term goals, such as student demographics, average debt after graduation, admission rates, and median earnings after graduation. Attending college is an investment in time and money for all students. In this research assignment, we take a look into how the release of this College Scorecard data has influenced student interest in colleges that predominantly grant bachelor's degrees. My assumption going into this project was that student interest in high earning schools would spike up significantly after September 2015. 
+
+## Information about the data used
+The College Scorecard data was combined with data taken from Google Trends which provided information on how many keywords were used to look up information pertaining to specific schools. The amount of Google searches would indicate amount of interest prospective students would have on specific schools. 
+
+## Data Wrangling
+After wrangling the data, my resulting data set had 928,943 observations across 7 variables.  
+
+## Median Earnings
+In order to differentiate high earning schools vs low earning schools, I had to come up with a Median Earnings Threshold, which came out to be $41,800. So my analysis moving forward will have the logic that schools with median earnings for alumni 10 years after graduation above $41,800 will be considered as 'high earning schools' while those below $41,800 will be considered as 'low earning schools'.The 'median_earnings' variable was originally a character type, so it needed to be converted to numeric in order to perform the median() function on it.  The analysis moving forward will show if student interest in high earning schools vs. low earning schools was effected after this data was made available after September 2015. 
+
+```{r, echo=FALSE}
+median_earnings_threshold
+```
+
+The table below includes the two models that were produced. My independent variable here is 'median_earnings' and independent variable is 'standardized_index', both pulling from two different data sources, 'pre_sept_2015' and 'post_sept_2015' to compare between the two time frames. Standardized Index was chosen as the independent variable because we want to see the effect of student interest on how much money alumni make after graduating from certain colleges. I've included the binary variable of 'high_earning_school' to show the effect of the Index on high vs. low earning schools. The factor of 'public_private' notes three different factors: Public School, Private School (Non-Profit), and Private School (For-Profit). My regressions tell me the following: 
+
+#### Model 1: 
+For every one-unit increase in 'standardized_index', 'median_earnings' increased by $294.53 prior to September 2015, holding all else constant. This was statistically significant at the .1% level. For every one-unit increase in 'standardized_index', median earnings for alumni from a 'high_earning_school' increased by $16,262.23 prior to September 2015. This was statistically significant at the .1% level. For every one-unit increase in 'standardized_index', graduates from a Private (Non-Profit) school earned $563.40 more than graduates from a Public School. This was statistically significant at the .1% level. Graduates from a Private (For-Profit) school earned $28.63 less than graduates from a Public School prior to September 2015. There were 754,032 observations in model 1.    
+
+#### Model 2: 
+For every one-unit increase in 'standardized_index', 'median_earnings' increased by $175.04 after September 2015, holding all else constant. This was statistically significant at the .1% level. For every one-unit increase in 'standardized_index', median earnings for alumni from a 'high_earning_school' increased by $16,294.44 after September 2015. This was statistically significant at the .1% level. For every one-unit increase in 'standardized_index', graduates from a Private (Non-Profit) school earned $592.30 more than graduates from a Public School. This was statistically significant at the .1% level. Graduates from a Private (For-Profit) school earned $91.71 more than graduates from a Public School after September 2015. There were 174,911 observations in model 2.     
+
+#### Regression Model Outputs:
+```{r, echo=FALSE}
+export_summs(m1, m2)
+```
+
+
+## Figures
+
+The Density geom was used to visualize the number of searches done against higher or lower standardized indexes. My assumption originally was that this distribution would look left tailed and centered at a higher index, but we see the bulk of this distribution centered around 0. My analysis tells me that the higher index, the higher earnings alumnus from a certain school make. This plot tells me that the number of searches on a high index school (e.g. a high earning school) is lower than what I had assumed. 
+
+```{r, echo=FALSE}
+density
+```
+
+## Conclusion
+
+In conclusion, this analysis indicates that the release of the College Scorecard has not made an influence on prospective student's Google searches for colleges with higher earning potential. The data tells us that the standardized index resulted in a decrease in median earnings after the College Scorecard was released. The overall decrease in median earnings per one unit increase of standardized_index went from $294.53 Pre-September 2015 and down to $175.04 Post-September 2015. The regression does tell us that median earnings significantly increased for alumnus from high earning schools (~$16,200 per one unit increase of standardized_index for both time periods). We also see an increase of median earnings from Pre-September 2015 to Post-September 2015 for  Private (Non-Profit and For-Profit) colleges. 
+
+My recommendation to high school education for prospective college students would be to have them do research on the list of schools that they wish to attend. Using the College Scorecard can help guide students to have the college experience that they are looking for if they just look at the data. Median earnings for alumni is definitely a factor to consider, but any person's college years are fundamental to shape the person that they become later in life. The data is available for anyone that knows where to look. 
